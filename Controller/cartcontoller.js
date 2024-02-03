@@ -96,6 +96,78 @@ const addToCart = async (req,res)=>{
         res.status(500).json({message:error.message})
     }
 }
+
+const removeFromCart = async (req,res)=>{
+    try {
+        const {id}= req.params
+        const getuser = await user.findOne({_id:id})
+        console.log("us",getuser)
+        if(!getuser){
+          res.status(404).json({
+              message:"user not found"
+          })
+        }
+          const {productid}=req.params
+          const getproduct = await product.findOne({_id:productid})
+  
+         console.log("pr",getproduct)
+          if(!getproduct){
+              res.status(404).json({
+                  message:"product not found"
+              })
+          }
+        const chectUserCart = await cart.findOne({user:id})
+        console.log("ruirs", chectUserCart)
+
+        const checkPostion = chectUserCart.cartItems.findIndex(item => item.product == productid )
+
+        console.log("che", checkPostion)
+
+        if(checkPostion > -1){
+            const item = chectUserCart.cartItems[checkPostion]
+            console.log("chess", item)
+
+            if(item.quantity > 1){
+                item.quantity -= 1
+                chectUserCart.bill -= item.price
+
+            }else{
+
+                chectUserCart.bill -= item.quantity * item.price
+                if(chectUserCart.bill < 0){
+                    chectUserCart.bill = 0
+                }
+                chectUserCart.cartItems.splice(checkPostion, 1)
+            }
+
+            chectUserCart.bill = chectUserCart.cartItems.reduce((acc, curr)=>{
+                return acc + curr.quantity * curr.price
+            },0)
+            await chectUserCart.save()
+
+            res.status(404).json({
+                message:"ITEM HAS BEEN REMOVE"
+            })
+
+
+
+        }else{
+            res.status(404).json({
+                message:"you don't have this item in your cart"
+            })
+        }
+
+
+    } catch (error) {
+        res.status(500).json({
+            message:error.message
+        })
+    }
+}
+
+
+
 module.exports = {
-    addToCart
+    addToCart,
+    removeFromCart
 }
